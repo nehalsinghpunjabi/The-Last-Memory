@@ -111,14 +111,17 @@ experience:
 Cache-Control: public, max-age=31536000, immutable    # /_next/static/*
 Cache-Control: public, max-age=0, must-revalidate     # HTML
 
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org https://commons.wikimedia.org; media-src 'self' blob:; frame-src 'self' https://www.youtube-nocookie.com; connect-src 'self'
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 ```
 
 `unsafe-eval` is needed by Next's dev runtime only — you can drop it in
-production. `blob:` and `data:` are needed because memory textures are painted
-to canvas at runtime.
+production. `blob:` and `data:` are needed because memory textures are painted to
+canvas at runtime. The Wikimedia `img-src` and the youtube-nocookie `frame-src`
+allow the milestone cards' optional archival image and any embeddable video; both
+degrade to procedural visuals + citation links if you omit them, so tighten the
+policy freely if you would rather not permit those hosts.
 
 ## Pre-deploy checklist
 
@@ -157,9 +160,10 @@ jobs:
 
 ## Performance notes for production
 
-- The first load is ~304 kB of JS (gzipped chunks), dominated by three.js. There
-  is no image, font or audio download at all — first meaningful paint is the
-  boot terminal, which renders before three.js has finished parsing.
+- First Load JS for the route is ~322 kB (dominated by three.js), served as
+  gzipped/Brotli chunks. There is no image, font or audio download at all — first
+  meaningful paint is the boot terminal, which renders before three.js has
+  finished parsing.
 - Shader compilation is the real startup cost. The boot sequence is deliberately
   ~2.6 seconds long to cover it; do not shorten it without re-measuring on a
   cold cache and a mid-range laptop.

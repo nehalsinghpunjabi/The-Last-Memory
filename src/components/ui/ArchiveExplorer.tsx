@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChapterId } from '@/lib/chapters';
 import { CHAPTER_BY_ID } from '@/lib/chapters';
 import { buildGraph, isSpineEdge } from '@/lib/history';
@@ -56,10 +56,17 @@ export function ArchiveExplorer() {
   const openMilestone = useArchive((s) => s.openMilestone);
   const [hovered, setHovered] = useState<string | null>(null);
 
+  // Escape belongs to the topmost layer. A record opens *on top of* the
+  // explorer, and both listen on the window — so without this guard one press
+  // dismissed both, throwing the visitor out of the timeline they were reading
+  // and discarding their place in it. While a record is open, the card owns the
+  // key; the explorer only takes it once the card is gone.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setExplorer(false);
+      if (e.key !== 'Escape') return;
+      if (useArchive.getState().milestoneId !== null) return;
+      setExplorer(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -88,6 +95,185 @@ export function ArchiveExplorer() {
   const { edges } = useMemo(() => buildGraph(), []);
 
   const eraColor = (chapter: ChapterId) => CHAPTER_BY_ID[chapter].grade.primary;
+
+  /* ---------------------------------------------------------------- *
+   * Horizontal navigation
+   *
+   * The lineage is far wider than any viewport, and the app hides
+   * scrollbars globally for the film — which left mouse-only desktop
+   * users with no way to discover, or reach, the two-thirds of history
+   * off the right edge. Three affordances now cover every input:
+   * a styled scrollbar (.museum-scroll), edge gradients that appear
+   * only when there is more in that direction, and drag-to-pan.
+   * ---------------------------------------------------------------- */
+  const scroller = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  // Custom scrollbar geometry: `can` gates the whole control, `thumb` is the
+  // visible fraction and `pos` the 0..1 position within the scrollable range.
+  const [bar, setBar] = useState({ can: false, thumb: 1, pos: 0 });
+  const [dragging, setDragging] = useState(false);
+  // Pointer id + origin for a drag in progress. Refs, not state: this updates
+  // on every pointermove and must not re-render the graph.
+  const drag = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
+  const moved = useRef(0);
+
+  const syncEdges = useCallback(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const can = max > 4;
+    setEdge({
+      left: el.scrollLeft > 4,
+      right: can && el.scrollLeft < max - 4,
+    });
+    setBar({
+      can,
+      // Floor the thumb so it stays grabbable on a very wide timeline.
+      thumb: can ? Math.max(0.1, el.clientWidth / el.scrollWidth) : 1,
+      pos: can ? Math.min(1, Math.max(0, el.scrollLeft / max)) : 0,
+    });
+  }, []);
+
+  // Recompute on open, on resize, and whenever the container scrolls.
+  useEffect(() => {
+    if (!open) return;
+    const raf = requestAnimationFrame(syncEdges);
+    window.addEventListener('resize', syncEdges);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', syncEdges);
+    };
+  }, [open, syncEdges]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Never hijack a press that began on a node — those are click targets, and
+    // a drag started on one would fight the milestone it is trying to open.
+    if ((e.target as HTMLElement).closest('button')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const el = scroller.current;
+    if (!el) return;
+    drag.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      left: el.scrollLeft,
+      top: el.scrollTop,
+    };
+    moved.current = 0;
+    setDragging(true);
+  }, []);
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const d = drag.current;
+      const el = scroller.current;
+      if (!d || !el || d.id !== e.pointerId) return;
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      moved.current = Math.max(moved.current, Math.abs(dx) + Math.abs(dy));
+      // Capture only once the gesture is clearly a drag, so a click that
+      // wobbles by a pixel still lands on the node underneath it.
+      if (moved.current > 6 && !el.hasPointerCapture(e.pointerId)) {
+        el.setPointerCapture(e.pointerId);
+      }
+      el.scrollLeft = d.left - dx;
+      el.scrollTop = d.top - dy;
+    },
+    []
+  );
+
+  const endDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = scroller.current;
+    if (el?.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    drag.current = null;
+    setDragging(false);
+  }, []);
+
+  /* The custom scrollbar. Dragging the thumb, or clicking anywhere on the
+     track, moves the timeline — the affordance a mouse-only visitor reaches
+     for first, and the one that makes "there is more to the right" legible
+     before any scrolling has happened. */
+  const track = useRef<HTMLDivElement>(null);
+  const barDrag = useRef<{ id: number; x: number; left: number } | null>(null);
+
+  const scrollToRatio = useCallback((ratio: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    el.scrollLeft = Math.min(1, Math.max(0, ratio)) * max;
+  }, []);
+
+  const onTrackPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const t = track.current;
+      const el = scroller.current;
+      if (!t || !el) return;
+      const rect = t.getBoundingClientRect();
+      const thumbW = rect.width * bar.thumb;
+      const thumbLeft = rect.left + (rect.width - thumbW) * bar.pos;
+      const onThumb = e.clientX >= thumbLeft && e.clientX <= thumbLeft + thumbW;
+      if (!onThumb) {
+        // Click on empty track: jump so the thumb centres under the pointer.
+        scrollToRatio((e.clientX - rect.left - thumbW / 2) / (rect.width - thumbW));
+      }
+      barDrag.current = { id: e.pointerId, x: e.clientX, left: el.scrollLeft };
+      t.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    },
+    [bar.thumb, bar.pos, scrollToRatio]
+  );
+
+  const onTrackPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const d = barDrag.current;
+    const t = track.current;
+    const el = scroller.current;
+    if (!d || !t || !el || d.id !== e.pointerId) return;
+    const rect = t.getBoundingClientRect();
+    const thumbW = rect.width * (el.clientWidth / el.scrollWidth);
+    const travel = Math.max(1, rect.width - thumbW);
+    const max = el.scrollWidth - el.clientWidth;
+    el.scrollLeft = d.left + ((e.clientX - d.x) / travel) * max;
+  }, []);
+
+  const onTrackPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const t = track.current;
+    if (t?.hasPointerCapture(e.pointerId)) t.releasePointerCapture(e.pointerId);
+    barDrag.current = null;
+  }, []);
+
+  /*
+   * Wheel routing, owned explicitly rather than left to the browser.
+   *
+   * Registered through addEventListener with `passive: false` because React
+   * attaches wheel handlers passively at the root, where preventDefault is a
+   * no-op — and without preventDefault the browser's own horizontal scroll runs
+   * *in addition* to ours and the timeline moves at double speed.
+   *
+   * Three intents, in priority order: a trackpad's horizontal gesture (deltaX),
+   * Shift+wheel, and — only when there is no vertical room to give — a plain
+   * wheel, so a mouse with one wheel is never a dead input on a wide, short
+   * graph. When the graph does scroll vertically, a plain wheel is left alone
+   * so reading down a tall era never drags the timeline sideways by accident.
+   */
+  useEffect(() => {
+    const el = scroller.current;
+    if (!open || !el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const maxX = el.scrollWidth - el.clientWidth;
+      if (maxX <= 4) return;
+      const horizontalIntent = e.deltaX !== 0 || e.shiftKey;
+      const canScrollY = el.scrollHeight - el.clientHeight > 4;
+      if (!horizontalIntent && canScrollY) return;
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      if (delta === 0) return;
+      el.scrollLeft += delta;
+      e.preventDefault();
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [open]);
 
   // Which nodes/edges are lit given the current hover.
   const litEdge = (from: string, to: string) =>
@@ -126,10 +312,24 @@ export function ArchiveExplorer() {
           </div>
 
           {/* Graph canvas (scrollable) */}
-          <div
-            data-lenis-prevent
-            className="relative flex-1 overflow-auto overscroll-contain px-[5vw] py-6"
-          >
+          {/* The scroll viewport, plus the two edge gradients. The gradients sit
+              outside the scroller so they stay pinned to the frame instead of
+              travelling with the content, and are pointer-transparent so they
+              never intercept a click on a node beneath them. */}
+          <div className="relative flex-1 overflow-hidden">
+            <div
+              ref={scroller}
+              id="lineage-scroller"
+              data-lenis-prevent
+              onScroll={syncEdges}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              className={`museum-scroll relative h-full overflow-auto overscroll-contain px-[5vw] py-6 ${
+                dragging ? 'cursor-grabbing select-none' : 'cursor-grab'
+              }`}
+            >
             <div
               className="relative"
               style={{ width: layout.width, height: layout.height, minWidth: '100%' }}
@@ -241,8 +441,70 @@ export function ArchiveExplorer() {
                   </button>
                 );
               })}
+              </div>
+            </div>
+
+            {/* Edge gradients — shown only while there is more lineage in that
+                direction, so they read as "history continues" rather than as
+                permanent decoration, and vanish at each end. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#03050a] to-transparent transition-opacity duration-500"
+              style={{ opacity: edge.left ? 1 : 0 }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#03050a] to-transparent transition-opacity duration-500"
+              style={{ opacity: edge.right ? 1 : 0 }}
+            />
+            {/* A one-word nudge in the direction that still has content. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-mono text-[10px] uppercase tracking-cinema text-signal/60 transition-opacity duration-500"
+              style={{ opacity: edge.right ? 1 : 0 }}
+            >
+              more →
             </div>
           </div>
+
+          {/* Horizontal scrollbar. Always present while the lineage overflows,
+              so the timeline announces its own width before anyone scrolls. */}
+          {bar.can && (
+            <div className="px-[5vw] pb-1 pt-2">
+              <div
+                ref={track}
+                role="scrollbar"
+                aria-controls="lineage-scroller"
+                aria-orientation="horizontal"
+                aria-label="Scroll the timeline horizontally"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(bar.pos * 100)}
+                tabIndex={0}
+                onPointerDown={onTrackPointerDown}
+                onPointerMove={onTrackPointerMove}
+                onPointerUp={onTrackPointerUp}
+                onPointerCancel={onTrackPointerUp}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowRight') scrollToRatio(bar.pos + 0.1);
+                  else if (e.key === 'ArrowLeft') scrollToRatio(bar.pos - 0.1);
+                  else if (e.key === 'Home') scrollToRatio(0);
+                  else if (e.key === 'End') scrollToRatio(1);
+                  else return;
+                  e.preventDefault();
+                }}
+                className="group relative h-2.5 w-full cursor-pointer rounded-full bg-bone/[0.07]"
+              >
+                <div
+                  className="pointer-events-none absolute inset-y-0 rounded-full bg-signal/40 transition-colors duration-200 group-hover:bg-signal/70"
+                  style={{
+                    width: `${bar.thumb * 100}%`,
+                    left: `${bar.pos * (100 - bar.thumb * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-bone/10 px-[5vw] py-3 font-mono text-[9px] uppercase tracking-wide2 text-bone/45">
@@ -254,7 +516,9 @@ export function ArchiveExplorer() {
               <span className="inline-block h-[2px] w-6 opacity-40" style={{ backgroundColor: '#8ba0b8' }} />
               Enabled
             </span>
-            <span className="text-bone/30">Hover to trace · Click to open · Esc to close</span>
+            <span className="text-bone/30">
+              Drag or scroll sideways to explore · Click to open · Esc to close
+            </span>
           </div>
         </motion.div>
       )}

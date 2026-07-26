@@ -42,3 +42,6 @@ yarn-error.log*
 # verification artefacts
 /scripts/stills/
 *-out.txt
+
+# Promotional screenshots (regenerate with scripts/capture-promo.mjs)
+screenshots/

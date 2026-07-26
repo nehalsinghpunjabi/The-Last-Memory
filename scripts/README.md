@@ -5,8 +5,10 @@ the whole setup — every asset is generated in the browser at runtime. These
 exist for verification and for the cases where you want to take the project
 further.
 
-All four browser-driving scripts need a dev or production server already
-running, and a local Chrome (set `CHROME_PATH` if it is somewhere unusual).
+The browser-driving scripts (everything except the asset bakers and
+`test-governor.mjs`) need a dev or production server already running, and a
+local Chrome (set `CHROME_PATH` if it is somewhere unusual). The prose below
+covers the ones you reach for by hand; a full index is at the end.
 
 ---
 
@@ -142,3 +144,26 @@ blender --background --python scripts/blender/generate_assets.py -- --out ./publ
 Generates correctly-scaled blockouts — hero towers, a satellite, a fractured
 crystal — so you can start art-directing rather than starting from a default
 cube. See [`BLENDER_ASSETS.md`](../BLENDER_ASSETS.md) for budgets and wiring.
+
+---
+
+## Full index
+
+| Script | What it does |
+| --- | --- |
+| `verify-experience.mjs` (`npm run verify`) | Drives all eight chapters; fails on console errors, exceptions or shader compile/link failures. |
+| `smoke-check.mjs` | Fast boot check — reaches BEGIN, mounts the canvas, counts shader/console errors. |
+| `build-verify.mjs` (`npm run build:verify`) | Production build into a separate `distDir` so it cannot clobber a running dev server. |
+| `capture-stills.mjs` (`npm run stills`) | One settled PNG per chapter. |
+| `capture-one.mjs <t> <name>` | A single settled frame at a timeline position. |
+| `capture-mobile.mjs` | Boots on an emulated phone (touch, low tier) and captures the mobile path. |
+| `capture-promo.mjs [name]` | The composed, chrome-free promotional screenshot set (see `../screenshots/`). |
+| `probe-scene.mjs <t>` | Dumps camera pose and nearby mesh uniforms — the "why is nothing on screen" tool. |
+| `probe-perf.mjs` | Confirms the adaptive DPR governor actually adapts under load, in a real browser. |
+| `test-governor.mjs` | Unit-tests the governor's pure decision function (incl. the recovery path software rendering can't reach). No server needed. |
+| `profile-render.mjs` | Draw calls, triangles, geometries, textures, programs and frame time per chapter. |
+| `profile-memory.mjs` | GPU memory by walking live textures and geometry buffers. |
+| `check-artifacts.mjs` | In-world artifact interaction: click-through, panel scroll, timeline freeze/restore. |
+| `check-scroll-lock.mjs` | Overlay scroll lock against real wheel and keyboard input. |
+| `check-explorer-nav.mjs` | Timeline explorer: scrollbar, drag-to-pan, wheel routing, edge fades. |
+| `check-responsive.mjs` | Mobile / tablet / desktop — entry point reachable, graph renders, no horizontal overflow. |

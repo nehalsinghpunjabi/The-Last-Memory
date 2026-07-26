@@ -71,6 +71,58 @@
     animation: grain-shift 0.6s steps(3) infinite;
   }
 
+  /*
+   * The museum surfaces opt back in to a scrollbar.
+   *
+   * The base layer hides scrollbars globally, which is right for the film — the
+   * HUD's progress spine is the playhead and a browser scrollbar would break
+   * the frame. But the Lineage explorer is a wide, pannable document, and on a
+   * mouse-only desktop an invisible scrollbar leaves no way to discover that
+   * more history exists off-screen. This re-enables one, styled to match: a
+   * hairline track and a cold-signal thumb rather than the OS default.
+   *
+   * `!important` is required only because the base rule zeroes the size on the
+   * bare `::-webkit-scrollbar` selector for every element on the page.
+   */
+  .museum-scroll {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(159, 216, 255, 0.42) rgba(232, 228, 220, 0.07);
+  }
+
+  /* Vertical only. The horizontal axis is driven by the explorer's own
+     scrollbar component, which is always visible when content overflows —
+     native horizontal bars are overlay-only on several platforms (and are
+     suppressed outright in headless Chrome), so they cannot be relied on as
+     the discovery affordance for a timeline that is mostly off-screen. */
+  .museum-scroll::-webkit-scrollbar:vertical {
+    width: 10px !important;
+  }
+
+  .museum-scroll::-webkit-scrollbar:horizontal {
+    height: 0 !important;
+  }
+
+  .museum-scroll::-webkit-scrollbar-track {
+    background: rgba(232, 228, 220, 0.06);
+    border-radius: 999px;
+  }
+
+  .museum-scroll::-webkit-scrollbar-thumb {
+    background: rgba(159, 216, 255, 0.34);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .museum-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(159, 216, 255, 0.7);
+    background-clip: content-box;
+  }
+
+  .museum-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   @keyframes grain-shift {
     0% {
       transform: translate(0, 0);

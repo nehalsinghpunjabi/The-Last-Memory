@@ -8,6 +8,10 @@ the perceptron, the winters, the transformer — and every claim it makes is tra
 primary source. The film is the medium; the history is the content. You control the playhead.
 
 <p align="center">
+  <img src="docs/images/01-hero.png" alt="A luminous megacity at golden hour — the Golden Age of machine learning, rendered as an unbroken cinematic crane shot." width="100%">
+</p>
+
+<p align="center">
   <a href="#"><strong>Live Demo</strong></a> ·
   <a href="#"><strong>GitHub Repository</strong></a> ·
   <a href="#"><strong>Demo Video</strong></a>
@@ -55,19 +59,38 @@ primary source. The film is the medium; the history is the content. You control 
 
 ## Gallery
 
-> [!NOTE]
-> Capture these with `npm run stills` (one PNG per chapter) or
-> `node scripts/capture-one.mjs <t> <name>` for a specific moment. Drop them in
-> `docs/screenshots/` and update the paths below.
-
-| # | Screenshot | What it should show |
-|---|---|---|
-| 1 | `docs/screenshots/01-boot.png` | The boot terminal before **BEGIN** — the diagnostic lines, the integrity meter, and the archive control. Establishes the premise in one frame. |
-| 2 | `docs/screenshots/02-hall.png` | Chapter II, the hall of memories, with a lit artifact under the cursor. This is the core interaction: records hanging in the world, not a sidebar. |
-| 3 | `docs/screenshots/03-record.png` | An open milestone card — date, people, organisations, *what happened / why it mattered*, the "this made possible →" chain, and the source links. Shoot one that has the archival plate visible (`The Perceptron`). |
-| 4 | `docs/screenshots/04-attention.png` | The signature moment at `t ≈ 0.523`: the attention field wired across the frame while the city recedes, on the line *"attention is all you need."* |
-| 5 | `docs/screenshots/05-timeline.png` | The Archive Explorer — all 35 milestones in true chronological order with the dependency edges and the highlighted main line from Turing to agentic AI. |
-| 6 | `docs/screenshots/06-ending.png` | The final held frame. Composed, warm, un-blown-out. No spoiler caption needed. |
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/02-interactive-artifact.png" alt="A milestone record — The Perceptron, 1958 — opened from an artifact in the 3D hall, with the real Mark I Perceptron archival photograph, sourced metadata, and its dependency chain.">
+      <p align="center"><sub><b>Interactive artifacts.</b> A record opens from the object you touched in the world — here The Perceptron, with a public-domain archival photograph and full citations, over the hall behind it.</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/images/04-signature-moment.png" alt="The transformer's attention mechanism rendered spatially — a cyan weighted network wired across the frame while the golden city recedes for it.">
+      <p align="center"><sub><b>The signature moment.</b> At <i>"attention is all you need,"</i> the mechanism the AI is built from is drawn in space — weighted connections between tokens, not a diagram of attention but the thing itself.</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/03-museum-hall.png" alt="The hall of memories — photographs and archival documents suspended in holographic depth around the AI's core light.">
+      <p align="center"><sub><b>The hall of memories.</b> Photographs and archival documents — founding papers, network diagrams, headlines — suspended in depth around the AI's dying core.</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/images/05-ai-history.png" alt="The Lineage of Intelligence — all 35 milestones in true chronological order across seven eras, with dependency edges and a highlighted main line from Turing to agentic AI.">
+      <p align="center"><sub><b>The full lineage.</b> Every milestone in true chronological order, era by era, with the dependency chain drawn as edges — the authoritative timeline behind the emotional one.</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/01-hero.png" alt="A luminous megacity at golden hour — the deep-learning boom rendered as a warm, atmospheric skyline.">
+      <p align="center"><sub><b>The Explosion.</b> The deep-learning boom as a megacity at golden hour — one unbroken crane shot through the era that produced the AI telling the story.</sub></p>
+    </td>
+    <td width="50%">
+      <img src="docs/images/06-ending.png" alt="The final memory — figures in a field at sunset, seen refracted through the facets of the crystal the whole film has been inside.">
+      <p align="center"><sub><b>The last memory.</b> The one image the AI keeps, seen through the facets of the thing it was kept inside. <i>(Shown abstracted — the reveal itself is best experienced in motion.)</i></sub></p>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -396,6 +419,8 @@ with pixel count. Every optimisation below follows from that measurement.
 
 Average frame time across all eight chapters improved **801 ms → 597 ms (−25%)**.
 Peak scene-reachable GPU memory: **8.17 MB** (7.54 MB textures / 0.63 MB geometry).
+The full method, the fill-rate-vs-geometry finding, and every optimisation are
+written up in [`PERFORMANCE.md`](PERFORMANCE.md).
 
 > [!WARNING]
 > **These are SwiftShader (software rasterisation) numbers.** Draw calls, triangle counts and
