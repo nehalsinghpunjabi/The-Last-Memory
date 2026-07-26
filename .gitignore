@@ -1,0 +1,44 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/.next-verify/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# generated assets — everything is procedural at runtime; these are optional
+# bakes produced by scripts/, not source
+/public/textures/
+/public/audio/*.wav
+/public/models/*.glb
+
+# verification artefacts
+/scripts/stills/
+*-out.txt

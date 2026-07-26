@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The core: one small light, still on, in a lot of dark. -->
+  <rect width="32" height="32" fill="#000000"/>
+  <circle cx="16" cy="16" r="9" fill="none" stroke="#2f6f9e" stroke-width="0.6" opacity="0.5"/>
+  <circle cx="16" cy="16" r="6.5" fill="#0d2033"/>
+  <circle cx="16" cy="16" r="4" fill="#9fd8ff" opacity="0.35"/>
+  <circle cx="16" cy="16" r="2.2" fill="#e8f6ff"/>
+</svg>

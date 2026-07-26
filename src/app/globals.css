@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Typography is deliberately system-stack only: no webfont request, no FOUT,
+ * no network dependency. The film has to be able to start in absolute silence
+ * and absolute black on the first frame, and a font swap 400ms in would break
+ * the opening. The serif carries the AI's voice; the mono carries the machine's.
+ */
+:root {
+  --font-display: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    background-color: #000;
+    scroll-behavior: auto; /* Lenis owns scrolling */
+  }
+
+  body {
+    background-color: #000;
+    color: #e8e4dc;
+    font-family: var(--font-mono);
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  ::selection {
+    background: rgba(159, 216, 255, 0.25);
+    color: #fff;
+  }
+
+  /* No scrollbar: the progress spine in the HUD is the playhead. */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  html {
+    scrollbar-width: none;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 1px solid rgba(232, 228, 220, 0.5);
+    outline-offset: 4px;
+  }
+}
+
+@layer utilities {
+  /* Fixed film grain over the DOM layer, so UI text sits in the same emulsion
+     as the render rather than floating cleanly above it. */
+  .film-grain::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    pointer-events: none;
+    opacity: 0.035;
+    z-index: 45;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
+    animation: grain-shift 0.6s steps(3) infinite;
+  }
+
+  @keyframes grain-shift {
+    0% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(-2%, 1%);
+    }
+    66% {
+      transform: translate(1%, -2%);
+    }
+    100% {
+      transform: translate(0, 0);
+    }
+  }
+}
+
+/* Respect the audience. Motion is the medium here, so a reduced-motion user
+   gets a shorter, calmer cut rather than a broken one: the handheld noise and
+   the grain animation stop, and Lenis runs nearly un-smoothed. */
+@media (prefers-reduced-motion: reduce) {
+  .film-grain::after {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
