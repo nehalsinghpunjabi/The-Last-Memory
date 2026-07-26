@@ -13,6 +13,10 @@ primary source. The film is the medium; the history is the content. You control 
   <a href="#"><strong>Demo Video</strong></a>
 </p>
 
+<p align="center">
+  <sub>Designed and built by <strong>Nehal Singh Punjabi</strong></sub>
+</p>
+
 > [!NOTE]
 > Replace the three links above before submission.
 > Live demo → Vercel URL · Repository → GitHub URL · Demo video → YouTube/Loom walkthrough.
@@ -711,8 +715,9 @@ remains accurate and unimplemented.
 
 ## Credits
 
-Written as an original work. Every image, sound and mesh in the experience is generated from
-code at runtime — there are no bundled textures, models, fonts or audio files.
+Designed, written and built by **Nehal Singh Punjabi**. Every image, sound and mesh in the
+experience is generated from code at runtime — there are no bundled textures, models, fonts
+or audio files.
 
 **Third-party code**
 
@@ -747,10 +752,10 @@ milestone, is in [`HISTORY_SOURCES.md`](HISTORY_SOURCES.md).
 
 MIT is the recommended choice and is consistent with how the project is built: no bundled
 third-party assets, and every dependency permissively licensed. To adopt it, add a `LICENSE`
-file containing the MIT text and this section becomes:
+file containing the MIT text with this copyright line:
 
 ```
-MIT © <your name>
+MIT © Nehal Singh Punjabi
 ```
 
 Third-party dependencies remain under their own licences (three.js, GSAP, Next.js and the
@@ -760,5 +765,5 @@ licence). The one public-domain image is credited above.
 ---
 
 <p align="center">
-  <sub>Built with Next.js, three.js and 35 primary sources.</sub>
+  <sub>Built by Nehal Singh Punjabi with Next.js, three.js and 35 primary sources.</sub>
 </p>
